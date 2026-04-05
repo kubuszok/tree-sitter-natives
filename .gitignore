@@ -1,0 +1,20 @@
+# Cargo build output
+native/target/
+
+# WASM build output
+wasm/
+
+# Query collection output
+queries/
+
+# Release archives
+*.tar.gz
+*.zip
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp

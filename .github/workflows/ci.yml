@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-desktop:
+    name: Build native libraries (6 desktop targets)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: >-
+            x86_64-apple-darwin,
+            aarch64-apple-darwin,
+            x86_64-unknown-linux-gnu,
+            aarch64-unknown-linux-gnu,
+            x86_64-pc-windows-msvc,
+            aarch64-pc-windows-msvc
+
+      - uses: mlugg/setup-zig@v2
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            ~/Library/Caches/cargo-xwin
+            native/target
+          key: rust-macos-all-${{ hashFiles('native/Cargo.lock') }}
+          restore-keys: rust-macos-all-
+
+      - name: Install cross-compilation tools
+        run: |
+          cargo install cargo-zigbuild || true
+          cargo install cargo-xwin || true
+
+      - name: Build all 6 desktop targets
+        run: scripts/cross-all.sh
+
+      - name: Verify native artifacts
+        run: scripts/verify-artifacts.sh
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-natives
+          path: native/target/cross/
+
+  build-wasm:
+    name: Build WASM artifacts + collect queries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli
+
+      - name: Build WASM grammars
+        run: scripts/build-wasm.sh
+
+      - name: Collect query files
+        run: scripts/collect-queries.sh
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: wasm/
+
+      - name: Upload query files
+        uses: actions/upload-artifact@v4
+        with:
+          name: query-files
+          path: queries/
+
+  release:
+    name: Create release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-desktop, build-wasm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-natives
+          path: cross/
+
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: wasm/
+
+      - name: Download query files
+        uses: actions/download-artifact@v4
+        with:
+          name: query-files
+          path: queries/
+
+      - name: Create release archives
+        run: |
+          # Desktop per-platform archives
+          for plat in linux-x86_64 linux-aarch64 macos-x86_64 macos-aarch64; do
+            tar czf "tree-sitter-${plat}.tar.gz" -C "cross/${plat}" .
+          done
+          for plat in windows-x86_64 windows-aarch64; do
+            (cd "cross/${plat}" && zip -r "../../tree-sitter-${plat}.zip" .)
+          done
+          # WASM archive
+          tar czf tree-sitter-wasm.tar.gz -C wasm .
+          # Queries archive
+          tar czf tree-sitter-queries.tar.gz -C queries .
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            tree-sitter-*.tar.gz
+            tree-sitter-*.zip
+          generate_release_notes: true
