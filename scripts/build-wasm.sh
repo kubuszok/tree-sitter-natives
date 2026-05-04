@@ -7,8 +7,8 @@
 #
 # Output:
 #   wasm/
-#     tree-sitter.js          # web-tree-sitter runtime
-#     tree-sitter.wasm        # web-tree-sitter core WASM
+#     web-tree-sitter.js      # web-tree-sitter runtime
+#     web-tree-sitter.wasm    # web-tree-sitter core WASM
 #     grammars/
 #       tree-sitter-<lang>.wasm   # One .wasm per grammar
 
@@ -70,11 +70,11 @@ TMPDIR=$(mktemp -d)
   cd "$TMPDIR"
   npm pack web-tree-sitter 2>/dev/null
   tar xzf web-tree-sitter-*.tgz
-  cp package/tree-sitter.js "$WASM_DIR/"
-  cp package/tree-sitter.wasm "$WASM_DIR/"
+  cp package/web-tree-sitter.js "$WASM_DIR/"
+  cp package/web-tree-sitter.wasm "$WASM_DIR/"
 )
 rm -rf "$TMPDIR"
-echo "  OK: tree-sitter.js + tree-sitter.wasm"
+echo "  OK: web-tree-sitter.js + web-tree-sitter.wasm"
 
 # 2. Build each grammar as .wasm
 echo ""

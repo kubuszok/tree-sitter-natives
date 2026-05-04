@@ -2,107 +2,65 @@
 //
 // Exports (C ABI):
 //   - ts_*()                  — core tree-sitter API (ts_parser_new, ts_tree_root_node, etc.)
-//   - tree_sitter_<lang>()    — per-grammar language constructors
+//   - tree_sitter_<lang>()    — per-grammar language constructors (from parser.c)
 //   - ts_natives_*()          — introspection (grammar count, names)
 //
 // Each grammar crate compiles parser.c which defines tree_sitter_<lang>() in C.
-// However, cdylib only exports Rust #[no_mangle] symbols, so we create thin
-// wrappers that call through to the grammar crate's Rust API.
+// The build.rs ensures these C symbols are exported from the cdylib and not
+// dead-stripped by the linker.
 
-// ── Export macros ───────────────────────────────────────────────────────
+// ── Force each grammar crate to be linked ──────────────────────────────
+// Referencing LANGUAGE (or language()) ensures the crate's build.rs runs and
+// its static archive is included in the link. The actual C functions from
+// parser.c are exported via linker flags in build.rs.
 
-/// Export a grammar that uses the new LanguageFn API (LANGUAGE constant).
-/// LanguageFn::into_raw() returns `unsafe extern "C" fn() -> *const ()`.
-macro_rules! export_grammar {
-    // Standard: crate::LANGUAGE
-    ($crate_name:ident, $export_name:ident) => {
-        #[no_mangle]
-        pub extern "C" fn $export_name() -> *const () {
-            let f = $crate_name::LANGUAGE.into_raw();
-            unsafe { f() }
-        }
-    };
-    // Named variant: crate::LANGUAGE_VARIANT (for multi-grammar crates)
-    ($crate_name:ident { $lang_const:ident }, $export_name:ident) => {
-        #[no_mangle]
-        pub extern "C" fn $export_name() -> *const () {
-            let f = $crate_name::$lang_const.into_raw();
-            unsafe { f() }
-        }
-    };
+fn _force_link() {
+    // Tier 1
+    let _ = tree_sitter_bash::LANGUAGE;
+    let _ = tree_sitter_c::LANGUAGE;
+    let _ = tree_sitter_cpp::LANGUAGE;
+    let _ = tree_sitter_c_sharp::LANGUAGE;
+    let _ = tree_sitter_css::LANGUAGE;
+    let _ = tree_sitter_go::LANGUAGE;
+    let _ = tree_sitter_html::LANGUAGE;
+    let _ = tree_sitter_java::LANGUAGE;
+    let _ = tree_sitter_javascript::LANGUAGE;
+    let _ = tree_sitter_json::LANGUAGE;
+    let _ = tree_sitter_markdown::language();
+    let _ = tree_sitter_python::LANGUAGE;
+    let _ = tree_sitter_regex::LANGUAGE;
+    let _ = tree_sitter_ruby::LANGUAGE;
+    let _ = tree_sitter_rust::LANGUAGE;
+    let _ = tree_sitter_scala::LANGUAGE;
+    let _ = tree_sitter_sql::language();
+    let _ = tree_sitter_toml::language();
+    let _ = tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
+    let _ = tree_sitter_typescript::LANGUAGE_TSX;
+    let _ = tree_sitter_yaml::LANGUAGE;
+    // Tier 2
+    let _ = tree_sitter_cmake::LANGUAGE;
+    let _ = tree_sitter_dockerfile::language();
+    let _ = tree_sitter_elixir::LANGUAGE;
+    let _ = tree_sitter_erlang::LANGUAGE;
+    let _ = tree_sitter_haskell::LANGUAGE;
+    let _ = tree_sitter_julia::LANGUAGE;
+    let _ = tree_sitter_kotlin::language();
+    let _ = tree_sitter_lua::LANGUAGE;
+    let _ = tree_sitter_make::LANGUAGE;
+    let _ = tree_sitter_ocaml::LANGUAGE_OCAML;
+    let _ = tree_sitter_ocaml::LANGUAGE_OCAML_INTERFACE;
+    let _ = tree_sitter_php::LANGUAGE_PHP;
+    let _ = tree_sitter_php::LANGUAGE_PHP_ONLY;
+    let _ = tree_sitter_r::LANGUAGE;
+    let _ = tree_sitter_swift::LANGUAGE;
+    let _ = tree_sitter_vim::language();
+    let _ = tree_sitter_xml::LANGUAGE_XML;
+    let _ = tree_sitter_xml::LANGUAGE_DTD;
+    let _ = tree_sitter_zig::LANGUAGE;
 }
-
-/// Export a grammar that uses the old language() function API.
-/// The old Language type is #[repr(transparent)] wrapping *const TSLanguage,
-/// so transmuting to *const () is safe.
-macro_rules! export_grammar_old {
-    ($crate_path:path, $export_name:ident) => {
-        #[no_mangle]
-        pub extern "C" fn $export_name() -> *const () {
-            use $crate_path as lang;
-            let l = lang::language();
-            unsafe { std::mem::transmute(l) }
-        }
-    };
-}
-
-// ── Tier 1: Most popular languages ──────────────────────────────────────
-
-export_grammar!(tree_sitter_bash, tree_sitter_bash);
-export_grammar!(tree_sitter_c, tree_sitter_c);
-export_grammar!(tree_sitter_cpp, tree_sitter_cpp);
-export_grammar!(tree_sitter_c_sharp, tree_sitter_c_sharp);
-export_grammar!(tree_sitter_css, tree_sitter_css);
-export_grammar!(tree_sitter_go, tree_sitter_go);
-export_grammar!(tree_sitter_html, tree_sitter_html);
-export_grammar!(tree_sitter_java, tree_sitter_java);
-export_grammar!(tree_sitter_javascript, tree_sitter_javascript);
-export_grammar!(tree_sitter_json, tree_sitter_json);
-export_grammar_old!(tree_sitter_markdown, tree_sitter_markdown);
-export_grammar!(tree_sitter_python, tree_sitter_python);
-export_grammar!(tree_sitter_regex, tree_sitter_regex);
-export_grammar!(tree_sitter_ruby, tree_sitter_ruby);
-export_grammar!(tree_sitter_rust, tree_sitter_rust);
-export_grammar!(tree_sitter_scala, tree_sitter_scala);
-export_grammar_old!(tree_sitter_sql, tree_sitter_sql);
-export_grammar_old!(tree_sitter_toml, tree_sitter_toml);
-export_grammar!(tree_sitter_yaml, tree_sitter_yaml);
-
-// TypeScript: two variants
-export_grammar!(tree_sitter_typescript { LANGUAGE_TYPESCRIPT }, tree_sitter_typescript);
-export_grammar!(tree_sitter_typescript { LANGUAGE_TSX }, tree_sitter_tsx);
-
-// ── Tier 2: Broadly used languages ──────────────────────────────────────
-
-export_grammar!(tree_sitter_cmake, tree_sitter_cmake);
-export_grammar_old!(tree_sitter_dockerfile, tree_sitter_dockerfile);
-export_grammar!(tree_sitter_elixir, tree_sitter_elixir);
-export_grammar!(tree_sitter_erlang, tree_sitter_erlang);
-export_grammar!(tree_sitter_haskell, tree_sitter_haskell);
-export_grammar!(tree_sitter_julia, tree_sitter_julia);
-export_grammar_old!(tree_sitter_kotlin, tree_sitter_kotlin);
-export_grammar!(tree_sitter_lua, tree_sitter_lua);
-export_grammar!(tree_sitter_make, tree_sitter_make);
-export_grammar!(tree_sitter_r, tree_sitter_r);
-export_grammar!(tree_sitter_swift, tree_sitter_swift);
-export_grammar_old!(tree_sitter_vim, tree_sitter_vim);
-export_grammar!(tree_sitter_zig, tree_sitter_zig);
-
-// OCaml: two variants
-export_grammar!(tree_sitter_ocaml { LANGUAGE_OCAML }, tree_sitter_ocaml);
-export_grammar!(tree_sitter_ocaml { LANGUAGE_OCAML_INTERFACE }, tree_sitter_ocaml_interface);
-
-// PHP: two variants
-export_grammar!(tree_sitter_php { LANGUAGE_PHP }, tree_sitter_php);
-export_grammar!(tree_sitter_php { LANGUAGE_PHP_ONLY }, tree_sitter_php_only);
-
-// XML: two variants
-export_grammar!(tree_sitter_xml { LANGUAGE_XML }, tree_sitter_xml);
-export_grammar!(tree_sitter_xml { LANGUAGE_DTD }, tree_sitter_dtd);
 
 // ── Introspection ───────────────────────────────────────────────────────
 
-// Total count of exported tree_sitter_<lang>() functions.
 const GRAMMAR_COUNT: usize = 40;
 
 /// Wrapper to make *const i8 usable in static context.

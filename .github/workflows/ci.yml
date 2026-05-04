@@ -48,8 +48,17 @@ jobs:
           cargo install cargo-zigbuild || true
           cargo install cargo-xwin || true
 
+      - name: Install LLVM and add to PATH
+        run: |
+          brew install llvm
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+
       - name: Build all 6 desktop targets
         run: scripts/cross-all.sh
+        env:
+          # tree-sitter 0.19.5 (used by old grammar crates) has pointer type
+          # mismatches that Clang 22+ treats as errors. Downgrade to warning.
+          CFLAGS: "-Wno-error=incompatible-pointer-types"
 
       - name: Verify native artifacts
         run: scripts/verify-artifacts.sh

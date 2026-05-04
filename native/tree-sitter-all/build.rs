@@ -160,38 +160,74 @@ const TS_API_FUNCTIONS: &[&str] = &[
     "ts_set_allocator",
 ];
 
+/// Grammar C functions compiled from parser.c in each grammar crate.
+/// The linker must be forced to include these (via -u) because the Rust
+/// wrappers in lib.rs call through LanguageFn function pointers, which
+/// the linker can't trace into the C static archives.
+const GRAMMAR_C_FUNCTIONS: &[&str] = &[
+    "tree_sitter_bash",
+    "tree_sitter_c",
+    "tree_sitter_cpp",
+    "tree_sitter_c_sharp",
+    "tree_sitter_css",
+    "tree_sitter_go",
+    "tree_sitter_html",
+    "tree_sitter_java",
+    "tree_sitter_javascript",
+    "tree_sitter_json",
+    "tree_sitter_markdown",
+    "tree_sitter_python",
+    "tree_sitter_regex",
+    "tree_sitter_ruby",
+    "tree_sitter_rust",
+    "tree_sitter_scala",
+    "tree_sitter_sql",
+    "tree_sitter_toml",
+    "tree_sitter_typescript",
+    "tree_sitter_tsx",
+    "tree_sitter_yaml",
+    "tree_sitter_cmake",
+    "tree_sitter_dockerfile",
+    "tree_sitter_elixir",
+    "tree_sitter_erlang",
+    "tree_sitter_haskell",
+    "tree_sitter_julia",
+    "tree_sitter_kotlin",
+    "tree_sitter_lua",
+    "tree_sitter_make",
+    "tree_sitter_ocaml",
+    "tree_sitter_ocaml_interface",
+    "tree_sitter_php",
+    "tree_sitter_php_only",
+    "tree_sitter_r",
+    "tree_sitter_swift",
+    "tree_sitter_vim",
+    "tree_sitter_xml",
+    "tree_sitter_dtd",
+    "tree_sitter_zig",
+];
+
 fn main() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     match target_os.as_str() {
         "macos" | "ios" => {
-            // macOS: write an exported symbols list file and pass it to the linker.
-            // This ADDS to the default exports (our #[no_mangle] functions).
-            let exports_file = out_dir.join("ts_exports.txt");
-            let exports: String = TS_API_FUNCTIONS
-                .iter()
-                .map(|f| format!("_{f}"))  // macOS symbols have _ prefix
-                .collect::<Vec<_>>()
-                .join("\n");
-            fs::write(&exports_file, exports).unwrap();
-
-            // Use -reexported_symbols_list instead of -exported_symbols_list
-            // because the latter would REPLACE the default export list.
-            // But reexported_symbols_list is for re-exported dylibs, not .a files.
-            // Instead, use individual -exported_symbol flags.
+            // Export tree-sitter C API symbols + grammar constructors.
             for func in TS_API_FUNCTIONS {
+                println!("cargo:rustc-cdylib-link-arg=-Wl,-exported_symbol,_{func}");
+            }
+            for func in GRAMMAR_C_FUNCTIONS {
                 println!("cargo:rustc-cdylib-link-arg=-Wl,-exported_symbol,_{func}");
             }
         }
         "linux" | "freebsd" | "openbsd" | "netbsd" => {
-            // Linux: use a version script to export ts_* symbols.
+            // Use a version script to export ts_* symbols.
             let version_script = out_dir.join("ts_exports.map");
             let mut content = String::from("{\n  global:\n");
             for func in TS_API_FUNCTIONS {
                 content.push_str(&format!("    {func};\n"));
             }
-            // Also keep our Rust-exported symbols
             content.push_str("    tree_sitter_*;\n");
             content.push_str("    ts_natives_*;\n");
             content.push_str("  local: *;\n};\n");
@@ -215,6 +251,12 @@ fn main() {
                 "cargo:rustc-cdylib-link-arg=/DEF:{}",
                 def_file.display()
             );
+
+            // Allow duplicate symbol definitions from multiple tree-sitter versions.
+            // Old-API grammar crates (markdown, toml, sql, etc.) depend on tree-sitter
+            // 0.19/0.20 while we also have 0.26. Unix linkers deduplicate, but lld-link
+            // is stricter. /FORCE:MULTIPLE makes it behave like Unix linkers.
+            println!("cargo:rustc-cdylib-link-arg=/FORCE:MULTIPLE");
         }
         _ => {}
     }
