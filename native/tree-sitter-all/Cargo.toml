@@ -10,8 +10,8 @@ name = "tree_sitter_all"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-# Core tree-sitter runtime (C library)
 tree-sitter = "0.26"
+tree-sitter-language = "0.1"
 
 # ── Tier 1: Most popular languages ──────────────────────────────────────
 tree-sitter-bash = "0.23"
@@ -52,3 +52,70 @@ tree-sitter-swift = "0.7"
 tree-sitter-vim = "0.4"
 tree-sitter-xml = "0.7"
 tree-sitter-zig = "1.1"
+
+# ── Tier 3: tree-sitter-grammars org ────────────────────────────────────
+tree-sitter-arduino = "0.24"
+tree-sitter-bicep = "1.1"
+# tree-sitter-bitbake  # cc version conflict
+tree-sitter-cairo = "0.0.1"
+# tree-sitter-capnp  # cc version conflict
+tree-sitter-commonlisp = "0.4"
+tree-sitter-cpon = "1.0"
+# tree-sitter-cst  # cc version conflict
+# tree-sitter-csv  # cc version conflict
+tree-sitter-cuda = "0.21"
+tree-sitter-diff = "0.1"
+# tree-sitter-firrtl  # cc version conflict
+tree-sitter-func = "1.0"
+tree-sitter-gitattributes = "0.1"
+tree-sitter-glsl = "0.2"
+tree-sitter-go-sum = "1.0"
+# tree-sitter-gstlaunch  # cc version conflict
+tree-sitter-hare = "0.20"
+tree-sitter-hcl = "1.1"
+tree-sitter-hlsl = "0.2"
+# tree-sitter-ispc  # cc version conflict
+tree-sitter-kconfig = "1.3"
+tree-sitter-kdl = "1.1"
+# tree-sitter-linkerscript = "1.0"  # cc version conflict
+tree-sitter-luadoc = "1.1"
+tree-sitter-luap = "1.0"
+tree-sitter-luau = "1.2"
+# tree-sitter-nqc  # cc version conflict
+tree-sitter-objc = "3.0"
+tree-sitter-odin = "1.3"
+tree-sitter-po = "0.0.1"
+tree-sitter-pony = "1.0"
+tree-sitter-printf = "0.5"
+tree-sitter-properties = "0.3"
+tree-sitter-puppet = "1.3"
+tree-sitter-qmldir = "0.0.1"
+tree-sitter-query = "0.1"
+tree-sitter-requirements = "0.6"
+tree-sitter-ron = "0.2"
+tree-sitter-scss = "1.0"
+# tree-sitter-slang  # cc version conflict
+# tree-sitter-smali  # cc version conflict
+tree-sitter-squirrel = "1.0"
+tree-sitter-starlark = "1.3"
+tree-sitter-svelte = "0.10"
+# tree-sitter-tablegen  # cc version conflict
+tree-sitter-test = "0.3"
+# tree-sitter-thrift  # cc version conflict
+tree-sitter-ungrammar = "0.0.1"
+# tree-sitter-uxntal  # cc version conflict
+tree-sitter-vue = "0.0.3"
+tree-sitter-wgsl-bevy = "0.1"
+# tree-sitter-xcompose  # cc version conflict
+tree-sitter-yuck = "0.0.2"
+
+# ── Tier 4: tree-sitter (core) org ─────────────────────────────────────
+tree-sitter-agda = "1.3"
+tree-sitter-embedded-template = "0.25"
+tree-sitter-jsdoc = "0.25"
+tree-sitter-ql = "0.23"
+tree-sitter-verilog = "1.0"
+
+# Excluded: cc version conflicts with tree-sitter 0.26
+# tree-sitter-doxygen = "1.1"
+# tree-sitter-gn = "1.0"
