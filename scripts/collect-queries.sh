@@ -1,5 +1,8 @@
 #!/bin/bash
-# Collect highlight/injection/locals query files (.scm) from grammar npm packages.
+# Collect highlight/injection/locals query files (.scm) from grammar sources.
+#
+# Strategy: try npm first, fall back to GitHub raw download for grammars
+# whose npm packages don't bundle queries or are name-squatted.
 #
 # Output:
 #   queries/
@@ -13,46 +16,48 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 QUERIES_DIR="$SCRIPT_DIR/../queries"
 
-# Grammar npm packages (must match the grammars in Cargo.toml)
+# Format: "lang|npm-package|github-owner/repo|git-ref|queries-path-in-repo"
+# npm-package can be "-" to skip npm and go straight to GitHub.
+# queries-path-in-repo is relative to the repo root.
 GRAMMARS=(
   # Tier 1
-  "tree-sitter-bash"
-  "tree-sitter-c"
-  "tree-sitter-cpp"
-  "tree-sitter-c-sharp"
-  "tree-sitter-css"
-  "tree-sitter-go"
-  "tree-sitter-html"
-  "tree-sitter-java"
-  "tree-sitter-javascript"
-  "tree-sitter-json"
-  "tree-sitter-markdown"
-  "tree-sitter-python"
-  "tree-sitter-regex"
-  "tree-sitter-ruby"
-  "tree-sitter-rust"
-  "tree-sitter-scala"
-  "tree-sitter-sql"
-  "tree-sitter-toml"
-  "tree-sitter-typescript"
-  "tree-sitter-yaml"
+  "bash|tree-sitter-bash|-|-|-"
+  "c|tree-sitter-c|-|-|-"
+  "cpp|tree-sitter-cpp|-|-|-"
+  "c-sharp|tree-sitter-c-sharp|-|-|-"
+  "css|tree-sitter-css|-|-|-"
+  "go|tree-sitter-go|-|-|-"
+  "html|tree-sitter-html|-|-|-"
+  "java|tree-sitter-java|-|-|-"
+  "javascript|tree-sitter-javascript|-|-|-"
+  "json|tree-sitter-json|-|-|-"
+  "markdown|tree-sitter-markdown|tree-sitter-grammars/tree-sitter-markdown|split_parser|tree-sitter-markdown/queries"
+  "python|tree-sitter-python|-|-|-"
+  "regex|tree-sitter-regex|-|-|-"
+  "ruby|tree-sitter-ruby|-|-|-"
+  "rust|tree-sitter-rust|-|-|-"
+  "scala|tree-sitter-scala|-|-|-"
+  "sql|-|m-novikov/tree-sitter-sql|master|queries"
+  "toml|tree-sitter-toml|-|-|-"
+  "typescript|tree-sitter-typescript|-|-|-"
+  "yaml|-|tree-sitter-grammars/tree-sitter-yaml|master|queries"
   # Tier 2
-  "tree-sitter-cmake"
-  "tree-sitter-dockerfile"
-  "tree-sitter-elixir"
-  "tree-sitter-erlang"
-  "tree-sitter-haskell"
-  "tree-sitter-julia"
-  "tree-sitter-kotlin"
-  "tree-sitter-lua"
-  "tree-sitter-make"
-  "tree-sitter-ocaml"
-  "tree-sitter-php"
-  "tree-sitter-r"
-  "tree-sitter-swift"
-  "tree-sitter-vim"
-  "tree-sitter-xml"
-  "tree-sitter-zig"
+  "cmake|-|uyha/tree-sitter-cmake|master|queries"
+  "dockerfile|-|camdencheek/tree-sitter-dockerfile|main|queries"
+  "elixir|tree-sitter-elixir|-|-|-"
+  "erlang|-|WhatsApp/tree-sitter-erlang|main|queries"
+  "haskell|tree-sitter-haskell|-|-|-"
+  "julia|tree-sitter-julia|-|-|-"
+  "kotlin|tree-sitter-kotlin|-|-|-"
+  "lua|-|tree-sitter-grammars/tree-sitter-lua|master|queries"
+  "make|tree-sitter-make|-|-|-"
+  "ocaml|tree-sitter-ocaml|-|-|-"
+  "php|tree-sitter-php|-|-|-"
+  "r|-|r-lib/tree-sitter-r|main|queries"
+  "swift|tree-sitter-swift|-|-|-"
+  "vim|-|tree-sitter-grammars/tree-sitter-vim|master|queries/vim"
+  "xml|-|tree-sitter-grammars/tree-sitter-xml|master|queries/xml"
+  "zig|-|tree-sitter-grammars/tree-sitter-zig|master|queries"
 )
 
 rm -rf "$QUERIES_DIR"
@@ -60,41 +65,89 @@ mkdir -p "$QUERIES_DIR"
 
 echo "=== Collecting query files ==="
 COLLECTED=0
+FAILED=0
 
-for grammar in "${GRAMMARS[@]}"; do
-  # Extract language name from package name (tree-sitter-foo → foo)
-  lang="${grammar#tree-sitter-}"
-  echo -n "  $lang... "
-
-  TMPDIR=$(mktemp -d)
-  if (
-    cd "$TMPDIR"
-    npm pack "$grammar" 2>/dev/null
-    tar xzf ${grammar}-*.tgz 2>/dev/null
-  ); then
-    # Look for queries in common locations
-    FOUND=0
-    for queries_path in "$TMPDIR/package/queries" "$TMPDIR/package/src/queries"; do
-      if [ -d "$queries_path" ]; then
-        dest="$QUERIES_DIR/$lang"
-        mkdir -p "$dest"
-        cp "$queries_path"/*.scm "$dest/" 2>/dev/null && FOUND=1 || true
+collect_from_npm() {
+  local lang="$1" pkg="$2"
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  local found=1
+  if (cd "$tmpdir" && npm pack "$pkg" 2>/dev/null && tar xzf ${pkg}-*.tgz 2>/dev/null); then
+    for qpath in "$tmpdir/package/queries" "$tmpdir/package/src/queries"; do
+      if [ -d "$qpath" ] && ls "$qpath"/*.scm >/dev/null 2>&1; then
+        mkdir -p "$QUERIES_DIR/$lang"
+        cp "$qpath"/*.scm "$QUERIES_DIR/$lang/"
+        found=0
+        break
       fi
     done
-
-    if [ "$FOUND" -eq 1 ]; then
-      file_count=$(ls "$QUERIES_DIR/$lang"/*.scm 2>/dev/null | wc -l | tr -d ' ')
-      echo "OK ($file_count files)"
-      COLLECTED=$((COLLECTED + 1))
-    else
-      echo "no queries"
-    fi
-  else
-    echo "FAILED to fetch"
   fi
-  rm -rf "$TMPDIR"
+  rm -rf "$tmpdir"
+  return $found
+}
+
+collect_from_github() {
+  local lang="$1" repo="$2" ref="$3" qpath="$4"
+  local base_url="https://raw.githubusercontent.com/${repo}/${ref}/${qpath}"
+  mkdir -p "$QUERIES_DIR/$lang"
+  local got=0
+  for scm in highlights.scm locals.scm injections.scm tags.scm; do
+    if curl -fsSL "${base_url}/${scm}" -o "$QUERIES_DIR/$lang/$scm" 2>/dev/null; then
+      got=$((got + 1))
+    else
+      rm -f "$QUERIES_DIR/$lang/$scm"
+    fi
+  done
+  [ "$got" -gt 0 ]
+}
+
+for entry in "${GRAMMARS[@]}"; do
+  IFS='|' read -r lang npm_pkg gh_repo gh_ref gh_qpath <<< "$entry"
+  echo -n "  $lang... "
+
+  # Try npm first (unless skipped)
+  if [ "$npm_pkg" != "-" ] && collect_from_npm "$lang" "$npm_pkg"; then
+    count=$(ls "$QUERIES_DIR/$lang"/*.scm 2>/dev/null | wc -l | tr -d ' ')
+    echo "OK via npm ($count files)"
+    COLLECTED=$((COLLECTED + 1))
+    continue
+  fi
+
+  # Fall back to GitHub
+  if [ "$gh_repo" != "-" ] && collect_from_github "$lang" "$gh_repo" "$gh_ref" "$gh_qpath"; then
+    count=$(ls "$QUERIES_DIR/$lang"/*.scm 2>/dev/null | wc -l | tr -d ' ')
+    echo "OK via github ($count files)"
+    COLLECTED=$((COLLECTED + 1))
+    continue
+  fi
+
+  echo "FAILED"
+  FAILED=$((FAILED + 1))
 done
 
+# ── Apply version-compatible overrides ───────────────────────────────
+# Some grammars need hand-tuned queries because the npm/GitHub queries
+# reference node types from a different grammar version than our Cargo
+# pins, or because variant grammars (dtd, ocaml_interface) need their
+# own query files separate from the parent grammar.
+OVERRIDES_DIR="$SCRIPT_DIR/../query-overrides"
+if [ -d "$OVERRIDES_DIR" ]; then
+  echo ""
+  echo "--- Applying query overrides ---"
+  for override_lang in "$OVERRIDES_DIR"/*/; do
+    lang=$(basename "$override_lang")
+    mkdir -p "$QUERIES_DIR/$lang"
+    cp "$override_lang"/*.scm "$QUERIES_DIR/$lang/"
+    count=$(ls "$QUERIES_DIR/$lang"/*.scm 2>/dev/null | wc -l | tr -d ' ')
+    echo "  $lang: $count files (override)"
+    # Count as collected if it wasn't already
+    if [ ! -d "$QUERIES_DIR/$lang" ] 2>/dev/null; then
+      COLLECTED=$((COLLECTED + 1))
+    fi
+  done
+fi
+
 echo ""
-echo "=== Collected queries for $COLLECTED grammars ==="
+echo "=== Collected queries for $COLLECTED / $((COLLECTED + FAILED)) grammars ==="
 echo "  Output: $QUERIES_DIR"
+[ "$FAILED" -eq 0 ] || exit 1

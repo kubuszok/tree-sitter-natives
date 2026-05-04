@@ -4,5 +4,5 @@ resolver = "2"
 
 [profile.release]
 opt-level = "s"        # Optimize for size (87+ grammars produce large binaries)
-lto = true
+lto = false
 strip = "debuginfo"    # Keep function symbols (needed for FFI), strip debug info only
