@@ -10,96 +10,99 @@
 // dead-stripped by the linker.
 
 // ── Force each grammar crate to be linked ──────────────────────────────
-// Referencing LANGUAGE (or language()) ensures the crate's build.rs runs and
-// its static archive is included in the link. The actual C functions from
-// parser.c are exported via linker flags in build.rs.
+// For new-API grammars: call into_raw() then invoke the function pointer.
+// This forces the linker to retain the C parser code on all platforms.
+// For old-API grammars: language() directly calls the C function.
 
+#[inline(never)]
 fn _force_link() {
-    let _ = tree_sitter_agda::LANGUAGE;
-    let _ = tree_sitter_arduino::LANGUAGE;
-    let _ = tree_sitter_bash::LANGUAGE;
-    let _ = tree_sitter_bicep::LANGUAGE;
-    let _ = tree_sitter_c::LANGUAGE;
-    let _ = tree_sitter_c_sharp::LANGUAGE;
+    unsafe {
+    let _ = (tree_sitter_agda::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_arduino::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_bash::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_bicep::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_c::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_c_sharp::LANGUAGE.into_raw())();
     let _ = tree_sitter_cairo::language();
-    let _ = tree_sitter_cmake::LANGUAGE;
-    let _ = tree_sitter_commonlisp::LANGUAGE_COMMONLISP;
+    let _ = (tree_sitter_cmake::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_commonlisp::LANGUAGE_COMMONLISP.into_raw())();
     let _ = tree_sitter_cpon::language();
-    let _ = tree_sitter_cpp::LANGUAGE;
-    let _ = tree_sitter_css::LANGUAGE;
-    let _ = tree_sitter_cuda::LANGUAGE;
-    let _ = tree_sitter_diff::LANGUAGE;
+    let _ = (tree_sitter_cpp::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_css::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_cuda::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_diff::LANGUAGE.into_raw())();
     let _ = tree_sitter_dockerfile::language();
-    let _ = tree_sitter_elixir::LANGUAGE;
-    let _ = tree_sitter_embedded_template::LANGUAGE;
-    let _ = tree_sitter_erlang::LANGUAGE;
+    let _ = (tree_sitter_elixir::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_embedded_template::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_erlang::LANGUAGE.into_raw())();
     let _ = tree_sitter_func::language();
     let _ = tree_sitter_gitattributes::language();
-    let _ = tree_sitter_glsl::LANGUAGE_GLSL;
-    let _ = tree_sitter_go::LANGUAGE;
+    let _ = (tree_sitter_glsl::LANGUAGE_GLSL.into_raw())();
+    let _ = (tree_sitter_go::LANGUAGE.into_raw())();
     let _ = tree_sitter_go_sum::language();
     let _ = tree_sitter_hare::language();
-    let _ = tree_sitter_haskell::LANGUAGE;
-    let _ = tree_sitter_hcl::LANGUAGE;
-    let _ = tree_sitter_hlsl::LANGUAGE_HLSL;
-    let _ = tree_sitter_html::LANGUAGE;
-    let _ = tree_sitter_java::LANGUAGE;
-    let _ = tree_sitter_javascript::LANGUAGE;
-    let _ = tree_sitter_jsdoc::LANGUAGE;
-    let _ = tree_sitter_json::LANGUAGE;
-    let _ = tree_sitter_julia::LANGUAGE;
-    let _ = tree_sitter_kconfig::LANGUAGE;
+    let _ = (tree_sitter_haskell::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_hcl::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_hlsl::LANGUAGE_HLSL.into_raw())();
+    let _ = (tree_sitter_html::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_java::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_javascript::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_jsdoc::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_json::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_julia::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_kconfig::LANGUAGE.into_raw())();
     let _ = tree_sitter_kdl::language();
     let _ = tree_sitter_kotlin::language();
-    let _ = tree_sitter_lua::LANGUAGE;
+    let _ = (tree_sitter_lua::LANGUAGE.into_raw())();
     let _ = tree_sitter_luadoc::language();
     let _ = tree_sitter_luap::language();
-    let _ = tree_sitter_luau::LANGUAGE;
-    let _ = tree_sitter_make::LANGUAGE;
+    let _ = (tree_sitter_luau::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_make::LANGUAGE.into_raw())();
     let _ = tree_sitter_markdown::language();
-    let _ = tree_sitter_objc::LANGUAGE;
-    let _ = tree_sitter_ocaml::LANGUAGE_OCAML;
-    let _ = tree_sitter_ocaml::LANGUAGE_OCAML_INTERFACE;
-    let _ = tree_sitter_ocaml::LANGUAGE_OCAML_TYPE;
-    let _ = tree_sitter_odin::LANGUAGE;
-    let _ = tree_sitter_php::LANGUAGE_PHP;
-    let _ = tree_sitter_php::LANGUAGE_PHP_ONLY;
+    let _ = (tree_sitter_objc::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_ocaml::LANGUAGE_OCAML.into_raw())();
+    let _ = (tree_sitter_ocaml::LANGUAGE_OCAML_INTERFACE.into_raw())();
+    let _ = (tree_sitter_ocaml::LANGUAGE_OCAML_TYPE.into_raw())();
+    let _ = (tree_sitter_odin::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_php::LANGUAGE_PHP.into_raw())();
+    let _ = (tree_sitter_php::LANGUAGE_PHP_ONLY.into_raw())();
     let _ = tree_sitter_po::language();
     let _ = tree_sitter_pony::language();
-    let _ = tree_sitter_printf::LANGUAGE;
-    let _ = tree_sitter_properties::LANGUAGE;
-    let _ = tree_sitter_puppet::LANGUAGE;
-    let _ = tree_sitter_python::LANGUAGE;
-    let _ = tree_sitter_ql::LANGUAGE;
+    let _ = (tree_sitter_printf::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_properties::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_puppet::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_python::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_ql::LANGUAGE.into_raw())();
     let _ = tree_sitter_qmldir::language();
     let _ = tree_sitter_query::language();
-    let _ = tree_sitter_r::LANGUAGE;
-    let _ = tree_sitter_regex::LANGUAGE;
-    let _ = tree_sitter_requirements::LANGUAGE;
+    let _ = (tree_sitter_r::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_regex::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_requirements::LANGUAGE.into_raw())();
     let _ = tree_sitter_ron::language();
-    let _ = tree_sitter_ruby::LANGUAGE;
-    let _ = tree_sitter_rust::LANGUAGE;
-    let _ = tree_sitter_scala::LANGUAGE;
+    let _ = (tree_sitter_ruby::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_rust::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_scala::LANGUAGE.into_raw())();
     let _ = tree_sitter_scss::language();
     let _ = tree_sitter_sql::language();
     let _ = tree_sitter_squirrel::language();
-    let _ = tree_sitter_starlark::LANGUAGE;
+    let _ = (tree_sitter_starlark::LANGUAGE.into_raw())();
     let _ = tree_sitter_svelte::language();
-    let _ = tree_sitter_swift::LANGUAGE;
-    let _ = tree_sitter_test::LANGUAGE;
+    let _ = (tree_sitter_swift::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_test::LANGUAGE.into_raw())();
     let _ = tree_sitter_toml::language();
-    let _ = tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
-    let _ = tree_sitter_typescript::LANGUAGE_TSX;
+    let _ = (tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into_raw())();
+    let _ = (tree_sitter_typescript::LANGUAGE_TSX.into_raw())();
     let _ = tree_sitter_ungrammar::language();
-    let _ = tree_sitter_verilog::LANGUAGE;
+    let _ = (tree_sitter_verilog::LANGUAGE.into_raw())();
     let _ = tree_sitter_vim::language();
     let _ = tree_sitter_vue::language();
-    let _ = tree_sitter_wgsl_bevy::LANGUAGE;
-    let _ = tree_sitter_xml::LANGUAGE_DTD;
-    let _ = tree_sitter_xml::LANGUAGE_XML;
-    let _ = tree_sitter_yaml::LANGUAGE;
+    let _ = (tree_sitter_wgsl_bevy::LANGUAGE.into_raw())();
+    let _ = (tree_sitter_xml::LANGUAGE_DTD.into_raw())();
+    let _ = (tree_sitter_xml::LANGUAGE_XML.into_raw())();
+    let _ = (tree_sitter_yaml::LANGUAGE.into_raw())();
     let _ = tree_sitter_yuck::language();
-    let _ = tree_sitter_zig::LANGUAGE;
+    let _ = (tree_sitter_zig::LANGUAGE.into_raw())();
+    }
 }
 
 // ── Introspection ───────────────────────────────────────────────────────
@@ -114,6 +117,7 @@ unsafe impl Sync for SyncPtr {}
 /// Returns the number of bundled grammars.
 #[no_mangle]
 pub extern "C" fn ts_natives_grammar_count() -> i32 {
+    _force_link();
     GRAMMAR_COUNT as i32
 }
 
