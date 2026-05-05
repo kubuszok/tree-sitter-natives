@@ -290,6 +290,11 @@ fn main() {
             for func in TS_API_FUNCTIONS {
                 content.push_str(&format!("    {func}\n"));
             }
+            for func in GRAMMAR_C_FUNCTIONS {
+                content.push_str(&format!("    {func}\n"));
+            }
+            content.push_str("    ts_natives_grammar_count\n");
+            content.push_str("    ts_natives_grammar_names\n");
             fs::write(&def_file, content).unwrap();
 
             println!(
