@@ -1,16 +1,13 @@
 name: CI
 
+# CI disabled — builds are done locally via scripts/release.sh
+# The WASM build requires >10GB RAM (SQL grammar) which exceeds CI runner limits.
 on:
-  push:
-    branches: [master]
-    tags: ['*']
-  pull_request:
-    branches: [master]
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-desktop:
@@ -72,6 +69,7 @@ jobs:
   build-wasm:
     name: Build WASM artifacts + collect queries
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 

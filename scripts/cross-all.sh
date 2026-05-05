@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+# tree-sitter 0.19/0.20 (used by old grammar crates) has pointer type mismatches
+# that Clang 22+ treats as errors. Downgrade to warning.
+export CFLAGS="${CFLAGS:-} -Wno-error=incompatible-pointer-types"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NATIVE_DIR="$SCRIPT_DIR/../native"
 CROSS_DIR="$NATIVE_DIR/target/cross"

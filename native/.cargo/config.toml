@@ -1,0 +1,8 @@
+# Use static CRT on Windows — Scala Native links with /MT (static release).
+# Without this, the cc crate compiles C++ scanners with /MD (dynamic release),
+# causing LNK2038 mismatch errors when linking the final binary.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
