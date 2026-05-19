@@ -15,7 +15,7 @@
 // For old-API grammars: language() directly calls the C function.
 
 #[inline(never)]
-fn _force_link() {
+fn force_link() {
     unsafe {
     let _ = (tree_sitter_agda::LANGUAGE.into_raw())();
     let _ = (tree_sitter_arduino::LANGUAGE.into_raw())();
@@ -117,12 +117,13 @@ unsafe impl Sync for SyncPtr {}
 /// Returns the number of bundled grammars.
 #[no_mangle]
 pub extern "C" fn ts_natives_grammar_count() -> i32 {
-    _force_link();
-    GRAMMAR_COUNT as i32
+    force_link();
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+    { GRAMMAR_COUNT as i32 }
 }
 
 /// Returns a null-terminated array of grammar name C strings (static lifetime).
-/// Names match the C function suffix: tree_sitter_<name>().
+/// Names match the C function suffix: `tree_sitter_<name>()`.
 #[no_mangle]
 pub extern "C" fn ts_natives_grammar_names() -> *const *const i8 {
     static NAMES: [SyncPtr; GRAMMAR_COUNT + 1] = [
@@ -214,5 +215,5 @@ pub extern "C" fn ts_natives_grammar_names() -> *const *const i8 {
         // Null terminator
         SyncPtr(std::ptr::null()),
     ];
-    NAMES.as_ptr() as *const *const i8
+    NAMES.as_ptr().cast::<*const i8>()
 }

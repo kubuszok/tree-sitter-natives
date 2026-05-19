@@ -6,6 +6,7 @@
 // export them.
 
 use std::env;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 
@@ -162,7 +163,7 @@ const TS_API_FUNCTIONS: &[&str] = &[
 
 /// Grammar C functions compiled from parser.c in each grammar crate.
 /// The linker must be forced to include these (via -u) because the Rust
-/// wrappers in lib.rs call through LanguageFn function pointers, which
+/// wrappers in lib.rs call through `LanguageFn` function pointers, which
 /// the linker can't trace into the C static archives.
 const GRAMMAR_C_FUNCTIONS: &[&str] = &[
     "tree_sitter_agda",
@@ -271,7 +272,7 @@ fn main() {
             let version_script = out_dir.join("ts_exports.map");
             let mut content = String::from("{\n  global:\n");
             for func in TS_API_FUNCTIONS {
-                content.push_str(&format!("    {func};\n"));
+                writeln!(content, "    {func};").unwrap();
             }
             content.push_str("    tree_sitter_*;\n");
             content.push_str("    ts_natives_*;\n");
@@ -288,10 +289,10 @@ fn main() {
             let def_file = out_dir.join("ts_exports.def");
             let mut content = String::from("EXPORTS\n");
             for func in TS_API_FUNCTIONS {
-                content.push_str(&format!("    {func}\n"));
+                writeln!(content, "    {func}").unwrap();
             }
             for func in GRAMMAR_C_FUNCTIONS {
-                content.push_str(&format!("    {func}\n"));
+                writeln!(content, "    {func}").unwrap();
             }
             content.push_str("    ts_natives_grammar_count\n");
             content.push_str("    ts_natives_grammar_names\n");
