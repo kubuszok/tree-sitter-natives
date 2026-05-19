@@ -2,6 +2,15 @@
 members = ["tree-sitter-all"]
 resolver = "2"
 
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_safety_doc = "allow"
+module_name_repetitions = "allow"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
 [profile.release]
 opt-level = "s"        # Optimize for size (87+ grammars produce large binaries)
 lto = false
