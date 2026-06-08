@@ -79,7 +79,7 @@ jobs:
           node-version: '22'
 
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+        uses: mymindstorm/setup-emsdk@v16
 
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
