@@ -61,7 +61,7 @@ jobs:
         run: scripts/verify-artifacts.sh
 
       - name: Upload desktop artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-natives
           path: native/target/cross/
@@ -91,13 +91,13 @@ jobs:
         run: scripts/collect-queries.sh
 
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-artifacts
           path: wasm/
 
       - name: Upload query files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: query-files
           path: queries/
